@@ -22,6 +22,7 @@ import { getImageData } from './lib/get-image-data';
 import { isErrnoException } from './lib/is-errno-exception';
 import { isInstalled } from './lib/is-installed';
 import { getLocaleData, getSupportedLocale } from './lib/locale';
+import { MySQLService } from './lib/mysql/service';
 import * as oauthClient from './lib/oauth';
 import { createPassword } from './lib/passwords';
 import { phpGetThemeDetails } from './lib/php-get-theme-details';
@@ -42,6 +43,7 @@ import {
 	getServerFilesPath,
 	getSiteThumbnailPath,
 } from './storage/paths';
+import { getMySQLPath } from './storage/paths';
 import { loadUserData, saveUserData } from './storage/user-data';
 import type { WpCliResult } from './lib/wp-cli-process';
 
@@ -100,7 +102,9 @@ export async function getInstalledApps( _event: IpcMainInvokeEvent ): Promise< I
 }
 
 // Use sqlite database and db.php file in situ
+// @todo remove when we stepped away from using SQLite
 async function setupSqliteIntegration( path: string ) {
+	return;
 	await downloadSqliteIntegrationPlugin();
 	const wpContentPath = nodePath.join( path, 'wp-content' );
 	const databasePath = nodePath.join( wpContentPath, 'database' );
@@ -157,6 +161,7 @@ export async function createSite(
 		}
 	}
 
+
 	const details = {
 		id: crypto.randomUUID(),
 		name: siteName || nodePath.basename( path ),
@@ -196,6 +201,12 @@ export async function createSite(
 			server.details.themeDetails
 		);
 	}
+
+	// Database provisioning
+	// @todo version management
+	const service = new MySQLService();
+	server.details.mysql = await service.provisionDatabase( server, getMySQLPath(), '8.0.16' );
+
 	server.updateCachedThumbnail().then( () => sendThumbnailChangedEvent( event, details.id ) );
 
 	userData.sites.push( server.details );
@@ -232,21 +243,20 @@ export async function startServer(
 		return null;
 	}
 
-	const SQLitePath = `${ server.details.path }/wp-content/mu-plugins/${ SQLITE_FILENAME }`;
-	const hasWpConfig = fs.existsSync( nodePath.join( server.details.path, 'wp-config.php' ) );
-	const sqliteInstalled = await isSqlLiteInstalled( SQLitePath );
-	const sqliteOutdated = sqliteInstalled && ( await isSqliteInstallationOutdated( SQLitePath ) );
-
-	if ( ( ! sqliteInstalled && ! hasWpConfig ) || sqliteOutdated ) {
-		await setupSqliteIntegration( server.details.path );
-	}
-
 	const parentWindow = BrowserWindow.fromWebContents( event.sender );
 	await server.start();
 	if ( parentWindow && ! parentWindow.isDestroyed() && ! event.sender.isDestroyed() ) {
 		parentWindow.webContents.send( 'theme-details-changed', id, server.details.themeDetails );
 	}
 	server.updateCachedThumbnail().then( () => sendThumbnailChangedEvent( event, id ) );
+
+	// Start MySQL
+	const service = new MySQLService();
+	const dbResult = await service.startDatabaseServer( server );
+	if ( ! dbResult ) {
+		// @todo handle this scenario
+		console.log( `Failed to start MySQL for site ${ id }` );
+	}
 
 	console.log( 'Server started', server.details );
 	await updateSite( event, server.details );
@@ -263,6 +273,11 @@ export async function stopServer(
 	}
 
 	await server.stop();
+
+	// Stop MySQL
+	const service = new MySQLService();
+	await service.stopDatabaseServer( server );
+
 	return server.details;
 }
 

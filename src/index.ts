@@ -133,6 +133,7 @@ async function appBoot() {
 	function setupIpc() {
 		for ( const [ key, handler ] of Object.entries( ipcHandlers ) ) {
 			if ( typeof handler === 'function' && key !== 'logRendererMessage' ) {
+				console.log( key );
 				ipcMain.handle( key, function ( event, ...args ) {
 					try {
 						validateIpcSender( event );

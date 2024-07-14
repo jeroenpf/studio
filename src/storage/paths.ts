@@ -9,6 +9,10 @@ export function getServerFilesPath(): string {
 	return path.join( getAppDataPath(), getAppName(), 'server-files' );
 }
 
+export function getMySQLPath(): string {
+	return path.join( getAppDataPath(), getAppName(), 'mysql' );
+}
+
 export const DEFAULT_SITE_PATH = path.join(
 	( process.env.E2E && process.env.E2E_HOME_PATH
 		? process.env.E2E_HOME_PATH
