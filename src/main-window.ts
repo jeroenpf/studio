@@ -26,6 +26,10 @@ function initializePortFinder( sites: SiteDetails[] ) {
 		if ( site.port ) {
 			portFinder.addUnavailablePort( site.port );
 		}
+
+		if ( site.mysql?.port ) {
+			portFinder.addUnavailablePort( site.mysql.port );
+		}
 	} );
 }
 

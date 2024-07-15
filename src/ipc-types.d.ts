@@ -28,6 +28,7 @@ interface StoppedSiteDetails {
 		supportsWidgets: boolean;
 		supportsMenus: boolean;
 	};
+	mysql?: MySQLConfig;
 }
 
 interface StartedSiteDetails extends StoppedSiteDetails {
@@ -92,4 +93,29 @@ interface Window {
 interface WpcomNetworkError extends Error {
 	code: string;
 	status: number;
+}
+
+/**
+ * This represents the MySQL configuration for a site.
+ * It will be stored with the appropriate site in the userdata.
+ */
+interface MySQLConfig {
+	// Instance details
+	instanceId: string;
+	instanceDir: string;
+	dataDir: string;
+	version: string;
+
+	// Connection
+	host: string;
+	port: number;
+
+	// Root user
+	rootUsername: string;
+	rootPassword: string;
+
+	// WP user
+	wpUsername: string;
+	wpPassword: string;
+	wpDatabase: string;
 }
