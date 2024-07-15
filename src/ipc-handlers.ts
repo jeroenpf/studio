@@ -397,6 +397,11 @@ export async function deleteSite( event: IpcMainInvokeEvent, id: string, deleteF
 	if ( ! server ) {
 		throw new Error( 'Site not found.' );
 	}
+
+	// Delete DB
+	const service = new MySQLService();
+	await service.deleteDatabaseServer( server );
+
 	const userData = await loadUserData();
 	await server.delete();
 	try {
@@ -406,8 +411,9 @@ export async function deleteSite( event: IpcMainInvokeEvent, id: string, deleteF
 		}
 	} catch ( error ) {
 		/* We want to exit gracefully if the there is an error deleting the site files */
-		Sentry.captureException( error );
+		Sentry.captureException(error);
 	}
+
 	const newSites = userData.sites.filter( ( site ) => site.id !== id );
 	const newUserData = { ...userData, sites: newSites };
 	await saveUserData( newUserData );

@@ -66,7 +66,7 @@ class MySQLProcessManager {
 	public async stopProcess( instanceId: string ) {
 		const proc = this.processes.get( instanceId );
 		if ( ! proc ) {
-			throw new Error( `MySQL process for instance ${ instanceId } not found` );
+			return;
 		}
 
 		return new Promise( ( resolve, reject ) => {

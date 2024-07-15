@@ -83,7 +83,11 @@ class MySQLService {
 			return;
 		}
 
+		const pm = MySQLProcessManager.getInstance();
+		await pm.stopProcess( server.details.mysql.instanceId );
 
+		// Delete files
+		await fs.promises.rm( server.details.mysql.instanceDir, { recursive: true } );
 	}
 
 	/**
